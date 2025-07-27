@@ -17,6 +17,8 @@ func InitDB(creds *configs.Config) (*gorm.DB, error) {
 		creds.Host, creds.User, creds.Password, creds.Database, creds.Port, creds.SSLMode)
 	var err error
 
+	fmt.Println(dsn)
+
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("could not connect to database %s", err)

@@ -13,19 +13,11 @@ type Config struct {
 
 func New() *Config {
 	return &Config{
-		Host:     getEnv("HOST", ""),
-		Port:     getEnv("PORT", ""),
-		User:     getEnv("USER", ""),
-		Password: getEnv("PASSWORD", ""),
-		Database: getEnv("DATABASE", ""),
-		SSLMode:  getEnv("SSL_MODE", "disable"),
+		Host:     os.Getenv("HOST"),
+		Port:     os.Getenv("PORT"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("PASSWORD"),
+		Database: os.Getenv("DATABASE"),
+		SSLMode:  os.Getenv("SSL_MODE"),
 	}
-}
-
-func getEnv(key string, defaultVal string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-
-	return defaultVal
 }

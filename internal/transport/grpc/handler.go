@@ -3,10 +3,13 @@ package transportgrpc
 import (
 	"context"
 	"fmt"
+	"log"
 
 	taskpb "github.com/Guglahai/project-protos/proto/task"
 	userpb "github.com/Guglahai/project-protos/proto/user"
 	"github.com/Guglahai/tasks-service/internal/task"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
@@ -35,7 +38,7 @@ func (h *Handler) CreateTask(ctx context.Context, req *taskpb.CreateTaskRequest)
 	return &taskpb.CreateTaskResponse{Task: &taskpb.Task{Id: uint32(t.ID), UserId: uint32(t.UserID), Title: t.Task, IsDone: t.Is_done}}, nil
 }
 
-func (h *Handler) GetAllTasks(ctx context.Context, req *taskpb.ListTasksRequest) (*taskpb.ListTasksResponse, error) {
+func (h *Handler) ListTasks(ctx context.Context, req *taskpb.ListTasksRequest) (*taskpb.ListTasksResponse, error) {
 	tasks, err := h.svc.GetAllTasks()
 	if err != nil {
 		return nil, err
@@ -49,7 +52,7 @@ func (h *Handler) GetAllTasks(ctx context.Context, req *taskpb.ListTasksRequest)
 	return &taskpb.ListTasksResponse{Task: taskList}, nil
 }
 
-func (h *Handler) GetTaskByID(ctx context.Context, req *taskpb.GetTaskRequest) (*taskpb.GetTaskResponse, error) {
+func (h *Handler) GetTask(ctx context.Context, req *taskpb.GetTaskRequest) (*taskpb.GetTaskResponse, error) {
 	t, err := h.svc.GetTaskByID(uint(req.Id))
 	if err != nil {
 		return nil, err
@@ -57,7 +60,7 @@ func (h *Handler) GetTaskByID(ctx context.Context, req *taskpb.GetTaskRequest) (
 	return &taskpb.GetTaskResponse{Task: &taskpb.Task{Id: uint32(t.ID), UserId: uint32(t.UserID), Title: t.Task, IsDone: t.Is_done}}, nil
 }
 
-func (h *Handler) GetTasksByUserID(ctx context.Context, req *taskpb.ListTasksByUserRequest) (*taskpb.ListTasksByUserResponse, error) {
+func (h *Handler) ListTasksByUser(ctx context.Context, req *taskpb.ListTasksByUserRequest) (*taskpb.ListTasksByUserResponse, error) {
 	tasks, err := h.svc.GetTasksByUserID(uint(req.UserId))
 	if err != nil {
 		return nil, err
@@ -72,17 +75,27 @@ func (h *Handler) GetTasksByUserID(ctx context.Context, req *taskpb.ListTasksByU
 }
 
 func (h *Handler) UpdateTask(ctx context.Context, req *taskpb.UpdateTaskRequest) (*taskpb.UpdateTaskResponse, error) {
-	t, err := h.svc.UpdateTask(&task.Task{
+	taskModel := &task.Task{
 		ID:      uint(req.Task.Id),
 		UserID:  uint(req.Task.UserId),
 		Task:    req.Task.Title,
 		Is_done: req.Task.IsDone,
-	})
-	if err != nil {
-		return nil, err
 	}
 
-	return &taskpb.UpdateTaskResponse{Task: &taskpb.Task{Id: uint32(t.ID), UserId: uint32(t.UserID), Title: t.Task, IsDone: t.Is_done}}, nil
+	updatedTask, err := h.svc.UpdateTask(taskModel)
+	if err != nil {
+		log.Printf("Error updating task: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to update task: %v", err)
+	}
+
+	return &taskpb.UpdateTaskResponse{
+		Task: &taskpb.Task{
+			Id:     uint32(updatedTask.ID),
+			UserId: uint32(updatedTask.UserID),
+			Title:  updatedTask.Task,
+			IsDone: updatedTask.Is_done,
+		},
+	}, nil
 }
 
 func (h *Handler) DeleteTask(ctx context.Context, req *taskpb.DeleteTaskRequest) (*taskpb.DeleteTaskResponse, error) {
