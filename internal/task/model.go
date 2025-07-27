@@ -3,10 +3,10 @@ package task
 import "time"
 
 type Task struct {
-	ID        int `gorm:"primaryKey"`
+	ID        uint `gorm:"primaryKey"`
 	Task      string
 	Is_done   bool
-	UserID    string
+	UserID    uint
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt time.Time

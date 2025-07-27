@@ -1,43 +1,77 @@
 package task
 
-import "gorm.io/gorm"
+import (
+	"log"
+	"time"
 
-type TaskRepository interface {
-	CreateTask(task Task) error
-	GetAllTasks() ([]Task, error)
-	GetTaskByID(id string) (Task, error)
-	UpdateTask(task Task) error
-	DeleteTask(id string) error
+	"gorm.io/gorm"
+)
+
+type Repository interface {
+	CreateTask(task *Task) (*Task, error)
+	GetAllTasks() ([]*Task, error)
+	GetTaskByID(id uint) (*Task, error)
+	GetTasksByUserID(userID uint) ([]*Task, error)
+	UpdateTask(task *Task) (Task, error)
+	DeleteTask(id uint) error
 }
 
-type taskRepository struct {
+type repository struct {
 	db *gorm.DB
 }
 
-func NewTaskRepository(db *gorm.DB) TaskRepository {
-	return &taskRepository{db: db}
+func NewRepository(db *gorm.DB) Repository {
+	return &repository{db: db}
 }
 
-func (r *taskRepository) CreateTask(task Task) error {
-	return r.db.Create(&task).Error
+func (r *repository) CreateTask(task *Task) (*Task, error) {
+	if err := r.db.Create(&task).Error; err != nil {
+		return nil, err
+	}
+	return task, nil
 }
 
-func (r *taskRepository) GetAllTasks() ([]Task, error) {
-	var tasks []Task
-	err := r.db.Find(&tasks).Error
-	return tasks, err
+func (r *repository) GetAllTasks() ([]*Task, error) {
+	var tasks []*Task
+	if err := r.db.Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	return tasks, nil
 }
 
-func (r *taskRepository) GetTaskByID(id string) (Task, error) {
-	var task Task
-	err := r.db.First(&task, "id = ?", id).Error
-	return task, err
+func (r *repository) GetTaskByID(id uint) (*Task, error) {
+	var task *Task
+	if err := r.db.First(&task, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return task, nil
 }
 
-func (r *taskRepository) UpdateTask(task Task) error {
-	return r.db.Save(&task).Error
+func (r *repository) GetTasksByUserID(userID uint) ([]*Task, error) {
+	var tasks []*Task
+	if err := r.db.Where("user_id = ?", userID).Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	return tasks, nil
 }
 
-func (r *taskRepository) DeleteTask(id string) error {
+func (r *repository) UpdateTask(task *Task) (Task, error) {
+	err := r.db.
+		Model(&Task{}).
+		Where("id = ?", task.ID).
+		Updates(map[string]interface{}{
+			"task":       task.Task,
+			"is_done":    task.Is_done,
+			"user_id":    task.UserID,
+			"updated_at": time.Now(),
+		}).Error
+	if err != nil {
+		log.Printf("Error updating task: %v", err)
+		return Task{}, err
+	}
+	return *task, nil
+}
+
+func (r *repository) DeleteTask(id uint) error {
 	return r.db.Delete(&Task{}, "id = ?", id).Error
 }

@@ -27,7 +27,13 @@ func main() {
 	repo := task.NewRepository(db)
 	svc := task.NewService(repo)
 
-	if err := transportgrpc.RunGRPC(svc); err != nil {
+	userClient, conn, err := transportgrpc.NewUserClient("localhost:50051")
+	if err != nil {
+		log.Fatalf("failed to create user client: %v", err)
+	}
+	defer conn.Close()
+
+	if err := transportgrpc.RunGRPC(svc, userClient); err != nil {
 		log.Fatalf("gRPC сервер завершился с ошибкой: %v", err)
 	}
 }
